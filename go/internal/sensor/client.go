@@ -33,6 +33,7 @@ func (c TCPJSONClient) Stream(ctx context.Context, out chan<- domain.SkeletonFra
 	reader := bufio.NewReader(conn)
 	tcpConn, _ := conn.(*net.TCPConn)
 	const readDeadlineInterval = 500 * time.Millisecond
+	var pending []byte
 
 	for {
 		if tcpConn != nil {
@@ -42,6 +43,9 @@ func (c TCPJSONClient) Stream(ctx context.Context, out chan<- domain.SkeletonFra
 		}
 
 		line, err := reader.ReadBytes('\n')
+		if len(line) > 0 {
+			pending = append(pending, line...)
+		}
 		if err != nil {
 			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 				select {
@@ -64,6 +68,9 @@ func (c TCPJSONClient) Stream(ctx context.Context, out chan<- domain.SkeletonFra
 			}
 			return err
 		}
+
+		line = pending
+		pending = nil
 
 		select {
 		case <-ctx.Done():
