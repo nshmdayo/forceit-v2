@@ -5,6 +5,7 @@ from mediapipe_server.main import (
     SkeletonFrame,
     Vec3,
     encode_frame,
+    stream_frames,
     validate_fps,
 )
 
@@ -22,5 +23,24 @@ def test_validate_fps_rejects_non_positive_values(fps: float) -> None:
         validate_fps(fps)
 
 
+@pytest.mark.parametrize("fps", ["30", None])
+def test_validate_fps_rejects_non_numeric_values(fps: object) -> None:
+    with pytest.raises(ValueError, match="fps must be a number"):
+        validate_fps(fps)  # type: ignore[arg-type]
+
+
 def test_validate_fps_accepts_positive_value() -> None:
     assert validate_fps(30.0) == 30.0
+
+
+def test_stream_frames_breaks_on_broken_pipe(monkeypatch: pytest.MonkeyPatch) -> None:
+    class BrokenConn:
+        def sendall(self, data: bytes) -> None:
+            raise BrokenPipeError
+
+    def fail_sleep(_seconds: float) -> None:
+        raise AssertionError("sleep should not be called after disconnect")
+
+    monkeypatch.setattr("mediapipe_server.main.time.sleep", fail_sleep)
+
+    stream_frames(conn=BrokenConn(), fps=30.0)

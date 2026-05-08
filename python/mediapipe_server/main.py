@@ -41,9 +41,11 @@ def build_frame(now_ms: int) -> SkeletonFrame:
 
 
 def validate_fps(fps: float) -> float:
+    if not isinstance(fps, (int, float)):
+        raise ValueError(f"fps must be a number, got {type(fps).__name__}")
     if fps <= 0:
         raise ValueError(f"fps must be positive, got {fps}")
-    return fps
+    return float(fps)
 
 
 def stream_frames(
@@ -56,7 +58,10 @@ def stream_frames(
     while True:
         now_ms = int(time.time() * 1000)
         frame = frame_builder(now_ms)
-        conn.sendall(encode_frame(frame))
+        try:
+            conn.sendall(encode_frame(frame))
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            break
         time.sleep(frame_interval_seconds)
 
 
