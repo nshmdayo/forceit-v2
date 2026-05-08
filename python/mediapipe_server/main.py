@@ -40,12 +40,19 @@ def build_frame(now_ms: int) -> SkeletonFrame:
     )
 
 
+def validate_fps(fps: float) -> float:
+    if fps <= 0:
+        raise ValueError(f"fps must be positive, got {fps}")
+    return fps
+
+
 def stream_frames(
     conn: socket.socket,
     fps: float,
     frame_builder: Callable[[int], SkeletonFrame] = build_frame,
 ) -> None:
-    frame_interval_seconds = 1 / fps
+    validated_fps = validate_fps(fps)
+    frame_interval_seconds = 1 / validated_fps
     while True:
         now_ms = int(time.time() * 1000)
         frame = frame_builder(now_ms)
@@ -59,13 +66,14 @@ def serve(
     fps: float = 30,
     frame_builder: Callable[[int], SkeletonFrame] = build_frame,
 ) -> None:
+    validated_fps = validate_fps(fps)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
         server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server.bind((host, port))
         server.listen(1)
         conn, _ = server.accept()
         with conn:
-            stream_frames(conn=conn, fps=fps, frame_builder=frame_builder)
+            stream_frames(conn=conn, fps=validated_fps, frame_builder=frame_builder)
 
 
 if __name__ == "__main__":
