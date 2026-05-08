@@ -24,6 +24,9 @@ func (r Runtime) Run(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
+			if errors.Is(ctx.Err(), context.Canceled) {
+				return nil
+			}
 			return ctx.Err()
 		case err, ok := <-streamErrs:
 			if !ok {
