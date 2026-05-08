@@ -43,4 +43,6 @@ def test_stream_frames_breaks_on_broken_pipe(monkeypatch: pytest.MonkeyPatch) ->
 
     monkeypatch.setattr("mediapipe_server.main.time.sleep", fail_sleep)
 
-    stream_frames(conn=BrokenConn(), fps=30.0)
+    fixed_frame = SkeletonFrame(timestamp_ms=123, joints=[])
+
+    stream_frames(conn=BrokenConn(), fps=30.0, frame_builder=lambda _now_ms: fixed_frame)
