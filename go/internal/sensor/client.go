@@ -21,7 +21,7 @@ func (c TCPJSONClient) Stream(ctx context.Context, out chan<- domain.SkeletonFra
 	dialer := net.Dialer{}
 	conn, err := dialer.DialContext(ctx, "tcp", c.Addr)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return ctx.Err()
 		}
 		return fmt.Errorf("dial sensor server: %w", err)
